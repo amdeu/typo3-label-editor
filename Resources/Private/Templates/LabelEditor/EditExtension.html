@@ -1,0 +1,162 @@
+<html
+        xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+        xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
+        xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+        data-namespace-typo3-fluid="true"
+>
+
+<f:layout name="Module" />
+
+<f:section name="Content">
+    <h1>Edit Labels: {extensionKey}</h1>
+
+    <f:be.pageRenderer includeJavaScriptModules="{0: '@ubos/label-editor/label-editor.js'}" />
+    <f:be.pageRenderer includeCssFiles="{0: 'EXT:label_editor/Resources/Public/Css/label-editor.css'}" />
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="sourceFile" class="form-label">Label File</label>
+                    <select id="sourceFile" class="form-select">
+                        <f:for each="{extensionFiles}" as="file">
+                            <option
+                                    data-url="{f:be.uri(route: 'site_labeleditor', parameters: {action: 'editExtension', extensionKey: extensionKey, sourceFile: file, languageKey: languageKey})}"
+                                    {f:if(condition: '{file} == {sourceFile}', then: 'selected')}
+                            >
+                            {file -> f:format.crop(maxCharacters: 60)}
+                            </option>
+                        </f:for>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="languageKey" class="form-label">Language</label>
+                    <select id="languageKey" class="form-select">
+                        <f:for each="{availableLanguages}" as="title" key="key">
+                            <option
+                                    data-url="{f:be.uri(route: 'site_labeleditor', parameters: {action: 'editExtension', extensionKey: extensionKey, sourceFile: sourceFile, languageKey: key})}"
+                                    {f:if(condition: '{key} == {languageKey}', then: 'selected')}
+                            >
+                            {title}
+                            </option>
+                        </f:for>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <f:if condition="{translations}">
+        <form method="post" action="{f:be.uri(route: 'site_labeleditor', parameters: {action: 'saveTranslation'})}"
+              id="labeleditor_form">
+            <input type="hidden" name="extensionKey" value="{extensionKey}" />
+            <input type="hidden" name="sourceFile" value="{sourceFile}" />
+            <input type="hidden" name="languageKey" value="{languageKey}" />
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="card-header-headline mb-0">Labels</h2>
+                    <f:comment>
+                        <button type="submit" class="btn btn-primary">
+                            <core:icon identifier="actions-document-save" />
+                            Save Labels
+                        </button>
+                    </f:comment>
+                </div>
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th style="width: 20%">Key</th>
+                        <f:if condition="{languageKey} == 'default'">
+                            <f:then>
+                                <th style="width: 40%">Original</th>
+                                <th style="width: 40%">Custom Label</th>
+                            </f:then>
+                            <f:else>
+                                <th style="width: 25%">Default</th>
+                                <th style="width: 25%">Original</th>
+                                <th style="width: 30%">Custom Label</th>
+                            </f:else>
+                        </f:if>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <f:for each="{translations}" as="translation">
+                        <tr>
+                            <td>
+                                <code class="text-break">{translation.key}</code>
+                            </td>
+                            <f:if condition="{languageKey} == 'default'">
+                                <f:then>
+                                    <!-- Default language view -->
+                                    <td>
+                                        <small class="text-muted-off">{translation.source}</small>
+                                    </td>
+                                    <td class="{f:if(condition:translation.override, then:'custom-label-value')}">
+                                        <textarea
+                                                name="translations[{translation.key}]"
+                                                class="form-control"
+                                                rows="2"
+                                                placeholder="Customize this label"
+                                        >{translation.override}</textarea>
+                                    </td>
+                                </f:then>
+                                <f:else>
+                                    <!-- Translation language view -->
+                                        <f:if condition="{translation.hasDefaultOverride}">
+                                            <f:then>
+                                                <td class="custom-label-value">
+                                                <!--                                                <small class="text-danger">{translation.source}</small>-->
+<!--                                                <br />-->
+                                                <small class="">
+                                                    {translation.defaultOverride}
+                                                </small>
+                                                </td>
+                                            </f:then>
+                                            <f:else>
+                                                <td>
+                                                    <small class="">{translation.source}</small>
+                                                </td>
+                                            </f:else>
+                                        </f:if>
+                                    </td>
+                                    <td>
+                                        <f:if condition="{translation.translation}">
+                                            <f:then>
+                                                <small class="text-muted-off">{translation.translation}</small>
+                                            </f:then>
+                                            <f:else>
+                                                <small class="text-muted fst-italic">No translation</small>
+                                            </f:else>
+                                        </f:if>
+                                    </td>
+                                    <td class="{f:if(condition:translation.override, then:'custom-label-value')}">
+                                        <textarea
+                                                name="translations[{translation.key}]"
+                                                class="form-control"
+                                                rows="2"
+                                                placeholder="Override translation"
+                                        >{translation.override}</textarea>
+                                    </td>
+                                </f:else>
+                            </f:if>
+                        </tr>
+                    </f:for>
+                    </tbody>
+                </table>
+                <div class="card-footer d-flex justify-content-end">
+                    <f:comment>
+
+                    <button type="submit" class="btn btn-primary">
+                        <core:icon identifier="actions-document-save" />
+                        Save Labels
+                    </button>
+                    </f:comment>
+                </div>
+            </div>
+        </form>
+    </f:if>
+</f:section>
+
+</html>

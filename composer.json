@@ -1,0 +1,19 @@
+{
+  "name": "oliveoilexpert/typo3-label-editor",
+  "type": "typo3-cms-extension",
+  "description": "Translation Label Editor",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "typo3/cms-core": "^13.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "UBOS\\LabelEditor\\": "Classes/"
+    }
+  },
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "label_editor"
+    }
+  }
+}

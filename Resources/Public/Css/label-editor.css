@@ -1,0 +1,16 @@
+
+.table td.custom-label-value {
+	/*position: relative;*/
+	/*&:before {*/
+	/*	position: absolute;*/
+	/*	top: calc(50% - 3px);*/
+	/*	left: -5px;*/
+	/*	content: '';*/
+	/*	display: block;*/
+	/*	width: 7px;*/
+	/*	height: 7px;*/
+	/*	background: #4CAF50;*/
+	/*	border-radius: 100%;*/
+	/*}*/
+	--typo3-table-bg-type: var(--typo3-table-info-bg) !important;
+}
