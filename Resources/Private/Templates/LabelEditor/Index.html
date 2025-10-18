@@ -11,6 +11,8 @@
     <h1>Label Editor</h1>
 
     <f:be.pageRenderer includeJavaScriptModules="{0: '@typo3/backend/modal.js'}" />
+    <f:be.pageRenderer includeJavaScriptModules="{0: '@ubos/label-editor/label-editor.js'}" />
+    <f:be.pageRenderer includeCssFiles="{0: 'EXT:label_editor/Resources/Public/Css/label-editor.css'}" />
 
     <div class="card-group-container">
         <!-- Managed Extensions -->
@@ -21,28 +23,37 @@
                 </div>
                 <f:if condition="{managedExtensions}">
                     <f:then>
-                        <table class="table table-striped table-hover">
+                        <table class="table table-striped table-hover label-editor-extensions-table">
                             <thead>
                             <tr>
                                 <th>Extension</th>
+                                <th>Key</th>
                                 <th>Files</th>
                                 <th class="col-control"></th>
                             </tr>
                             </thead>
                             <tbody>
-                            <f:for each="{managedExtensions}" as="files" key="extensionKey">
+                            <f:for each="{managedExtensions}" as="extension">
                                 <tr>
                                     <td>
-                                        <strong>{extensionKey}</strong>
+                                        <div class="d-flex align-items-center">
+                                            <f:if condition="{extension.icon}">
+                                                <img class="extension-icon" src="{extension.icon}" alt="{extension.title}" />
+                                            </f:if>
+                                            <span>{extension.title}</span>
+                                        </div>
                                     </td>
                                     <td>
-                                        {files -> f:count()} file(s)
+                                        <code>{extension.key}</code>
+                                    </td>
+                                    <td>
+                                        {extension.files -> f:count()} file(s)
                                     </td>
                                     <td class="col-control">
                                         <div class="btn-group">
                                             <f:be.link
                                                     route="site_labeleditor"
-                                                    parameters="{action: 'editExtension', extensionKey: extensionKey}"
+                                                    parameters="{action: 'editExtension', extensionKey: extension.key}"
                                                     class="btn btn-sm btn-default"
                                                     title="Edit Labels"
                                             >
@@ -50,15 +61,14 @@
                                             </f:be.link>
                                             <f:be.link
                                                     route="site_labeleditor"
-                                                    parameters="{action: 'removeExtension', extensionKey: extensionKey}"
+                                                    parameters="{action: 'removeExtension', extensionKey: extension.key}"
                                                     class="btn btn-sm btn-default t3js-modal-trigger"
                                                     title="Remove Extension"
-                                                    data="{
-                                                        severity: 'warning',
-                                                        title: 'Remove Extension',
-                                                        content: 'Are you sure you want to remove {extensionKey} from label management? Existing override files will remain but will no longer be used.',
-                                                        button-close-text: 'Cancel'
-                                                    }"
+                                                    data-severity="warning"
+                                                    data-title="Remove Extension"
+                                                    data-content='Are you sure you want to remove "{extension.key}" from label management? This will permanently delete all custom label overrides for this extension. You can re-add the extension later, but customizations will need to be recreated.'
+                                                    data-button-close-text="Cancel"
+                                                    data-button-ok-text="Remove extension & Delete custom labels"
                                             >
                                                 <core:icon identifier="actions-delete" />
                                             </f:be.link>
@@ -86,7 +96,7 @@
                 </div>
                 <f:if condition="{availableExtensions}">
                     <f:then>
-                        <table class="table table-striped table-hover">
+                        <table class="table table-striped table-hover label-editor-extensions-table">
                             <thead>
                             <tr>
                                 <th>Extension</th>

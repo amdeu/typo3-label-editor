@@ -63,17 +63,36 @@ class RegistryService
 		$this->saveRegistry($registry);
 	}
 
-	public function removeExtension(string $extensionKey): void
+	public function removeExtension(string $extensionKey, bool $deleteFiles = true): void
 	{
 		$registry = $this->getRegistry();
+		$filesToDelete = [];
 
 		foreach (array_keys($registry) as $sourceFile) {
 			if (str_starts_with($sourceFile, "EXT:{$extensionKey}/")) {
+				// Collect override file paths before removing from registry
+				if ($deleteFiles && isset($registry[$sourceFile])) {
+					foreach ($registry[$sourceFile] as $overridePath) {
+						if (file_exists($overridePath)) {
+							$filesToDelete[] = $overridePath;
+						}
+					}
+				}
 				unset($registry[$sourceFile]);
 			}
 		}
 
 		$this->saveRegistry($registry);
+
+		// Delete the actual override files
+		if ($deleteFiles) {
+			foreach ($filesToDelete as $file) {
+				@unlink($file);
+			}
+
+			// Clean up empty directories
+			$this->cleanupEmptyDirectories($extensionKey);
+		}
 	}
 
 	public function getOverridePath(string $sourceFile, string $languageKey = 'default'): string
@@ -133,5 +152,31 @@ class RegistryService
 			$this->registryFile,
 			json_encode($registry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
 		);
+	}
+
+	private function cleanupEmptyDirectories(string $extensionKey): void
+	{
+		$extensionDir = $this->overrideBasePath . '/' . $extensionKey;
+
+		if (!is_dir($extensionDir)) {
+			return;
+		}
+
+		// Remove empty subdirectories
+		$iterator = new \RecursiveIteratorIterator(
+			new \RecursiveDirectoryIterator($extensionDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+			\RecursiveIteratorIterator::CHILD_FIRST
+		);
+
+		foreach ($iterator as $file) {
+			if ($file->isDir() && !glob($file->getPathname() . '/*')) {
+				@rmdir($file->getPathname());
+			}
+		}
+
+		// Remove main extension directory if empty
+		if (!glob($extensionDir . '/*')) {
+			@rmdir($extensionDir);
+		}
 	}
 }

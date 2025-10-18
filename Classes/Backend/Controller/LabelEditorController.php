@@ -53,6 +53,17 @@ class LabelEditorController extends ActionController
 			$availableExtensions,
 			fn($ext) => !isset($managedExtensions[$ext['key']])
 		);
+		$managedExtensions = array_map(
+			fn($key, $files) => array_merge(
+				$availableExtensions[$key] ?? [],
+				[
+				'key' => $key,
+				'files' => $files,
+				]
+			),
+			array_keys($managedExtensions),
+			$managedExtensions
+		);
 
 		$this->moduleTemplate->assignMultiple([
 			'managedExtensions' => $managedExtensions,

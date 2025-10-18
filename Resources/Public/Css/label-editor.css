@@ -14,3 +14,15 @@
 	/*}*/
 	--typo3-table-bg-type: var(--typo3-table-info-bg) !important;
 }
+
+.table .custom-label-textarea {
+	field-sizing: content;
+}
+
+.label-editor-extensions-table {
+	th, td {
+		&:first-child {
+			width: 40%;
+		}
+	}
+}
