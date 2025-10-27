@@ -23,6 +23,8 @@ use UBOS\LabelEditor\Backend\Service\ExtensionScannerService;
 use UBOS\LabelEditor\Backend\Service\RegistryService;
 use UBOS\LabelEditor\Backend\Service\XliffService;
 
+
+// todo: add permission checks, add multiselect for language selection, add possibility to add new labels, add button for admins to save to original file, view to edit one label in all languages at once
 #[AsController]
 class LabelEditorController extends ActionController
 {
