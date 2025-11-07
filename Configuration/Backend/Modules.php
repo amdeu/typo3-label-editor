@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use UBOS\LabelEditor\Backend\Controller\LabelEditorController;
+use Amdeu\LabelEditor\Backend\Controller\LabelEditorController;
 
 return [
 	'site_labeleditor' => [

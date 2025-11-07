@@ -4,8 +4,8 @@ services:
     autoconfigure: true
     public: false
 
-  UBOS\LabelEditor\:
+  Amdeu\LabelEditor\:
     resource: '../Classes/*'
 
-  UBOS\LabelEditor\Backend\Controller\LabelEditorController:
+  Amdeu\LabelEditor\Backend\Controller\LabelEditorController:
     public: true

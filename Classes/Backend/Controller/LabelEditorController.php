@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace UBOS\LabelEditor\Backend\Controller;
+namespace Amdeu\LabelEditor\Backend\Controller;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -19,9 +19,9 @@ use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
-use UBOS\LabelEditor\Backend\Service\ExtensionScannerService;
-use UBOS\LabelEditor\Backend\Service\RegistryService;
-use UBOS\LabelEditor\Backend\Service\XliffService;
+use Amdeu\LabelEditor\Backend\Service\ExtensionScannerService;
+use Amdeu\LabelEditor\Backend\Service\RegistryService;
+use Amdeu\LabelEditor\Backend\Service\XliffService;
 
 
 // todo: add permission checks, add multiselect for language selection, add possibility to add new labels, add button for admins to save to original file, view to edit one label in all languages at once

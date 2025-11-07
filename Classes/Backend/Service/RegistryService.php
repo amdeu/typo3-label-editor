@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace UBOS\LabelEditor\Backend\Service;
+namespace Amdeu\LabelEditor\Backend\Service;
 
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\GeneralUtility;

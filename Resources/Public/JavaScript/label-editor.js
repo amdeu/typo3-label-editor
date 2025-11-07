@@ -1,5 +1,5 @@
 /**
- * Module: @ubos/label-editor/label-editor
+ * Module: @amdeu/label-editor/label-editor
  */
 class LabelEditor {
 	constructor() {
