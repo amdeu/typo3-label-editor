@@ -31,7 +31,7 @@
             </div>
             <f:if condition="{translations}">
                 <!-- Add Label Form -->
-                <f:form action="addLabel" method="post" class="row g-3">
+                <f:form action="addLabel" method="post">
                     <f:form.hidden name="extensionKey" value="{extensionKey}" />
                     <f:form.hidden name="sourceFile" value="{sourceFile}" />
                     <f:for each="{languageKeys}" as="languageKey">
@@ -46,7 +46,7 @@
                         <f:form.textfield
                                 name="labelKey"
                                 id="labelKey"
-                                placeholder="new.label"
+                                placeholder="label.key"
                                 class="form-control"
                                 style="width: 20em;"
                                 additionalAttributes="{pattern: '[a-zA-Z0-9._-]+'}"
@@ -60,7 +60,6 @@
 
     <f:if condition="{translations}">
 
-        <f:debug>{translations}</f:debug>
         <!-- Save Translations Form -->
         <f:form action="saveTranslation" method="post" id="labeleditor_form">
             <f:form.hidden name="extensionKey" value="{extensionKey}" />
@@ -117,7 +116,9 @@
                             </f:then>
                             <f:else>
                                 <f:for each="{languageKeys}" as="langKey">
-                                    <th>{availableLanguages.{langKey}}</th>
+                                    <th style="width: calc(80% / {languageKeys -> f:count()})">
+                                        {availableLanguages.{langKey}}
+                                    </th>
                                 </f:for>
                             </f:else>
                         </f:if>
