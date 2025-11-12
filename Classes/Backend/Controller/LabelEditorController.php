@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Amdeu\LabelEditor\Backend\Controller;
 
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
@@ -15,7 +14,6 @@ use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
 use TYPO3\CMS\Core\Localization\LanguageService;
-use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
@@ -23,8 +21,6 @@ use Amdeu\LabelEditor\Backend\Service\ExtensionScannerService;
 use Amdeu\LabelEditor\Backend\Service\RegistryService;
 use Amdeu\LabelEditor\Backend\Service\XliffService;
 
-
-// todo: add permission checks, add multiselect for language selection, add possibility to add new labels, add button for admins to save to original file, view to edit one label in all languages at once
 #[AsController]
 class LabelEditorController extends ActionController
 {
@@ -50,19 +46,9 @@ class LabelEditorController extends ActionController
 		$managedExtensions = $this->registryService->getManagedExtensions();
 		$availableExtensions = $this->scannerService->getAvailableExtensions();
 
-		// Filter out already managed extensions
-		$unmanaged = array_filter(
-			$availableExtensions,
-			fn($ext) => !isset($managedExtensions[$ext['key']])
-		);
+		$unmanaged = array_filter($availableExtensions, fn($ext) => !isset($managedExtensions[$ext['key']]));
 		$managedExtensions = array_map(
-			fn($key, $files) => array_merge(
-				$availableExtensions[$key] ?? [],
-				[
-				'key' => $key,
-				'files' => $files,
-				]
-			),
+			fn($key, $files) => array_merge($availableExtensions[$key] ?? [], ['key' => $key, 'files' => $files]),
 			array_keys($managedExtensions),
 			$managedExtensions
 		);
@@ -87,16 +73,8 @@ class LabelEditorController extends ActionController
 			);
 		} else {
 			$this->registryService->addExtension($extensionKey, $locallangFiles);
-
-			// Clear core cache
-			//$this->clearCoreCache();
-
 			$this->addFlashMessage(
-				sprintf(
-					"Extension '%s' added with %d translation file(s). System cache cleared.",
-					$extensionKey,
-					count($locallangFiles)
-				),
+				sprintf("Extension '%s' added with %d translation file(s). System cache cleared.", $extensionKey, count($locallangFiles)),
 				'Extension Added',
 				ContextualFeedbackSeverity::OK
 			);
@@ -108,10 +86,6 @@ class LabelEditorController extends ActionController
 	public function removeExtensionAction(string $extensionKey): ResponseInterface
 	{
 		$this->registryService->removeExtension($extensionKey);
-
-		// Clear core cache
-		//$this->clearCoreCache();
-
 		$this->addFlashMessage(
 			"Extension '{$extensionKey}' removed from label management. System cache cleared.",
 			'Extension Removed',
@@ -124,76 +98,118 @@ class LabelEditorController extends ActionController
 	public function editExtensionAction(
 		string $extensionKey,
 		string $sourceFile = '',
-		string $languageKey = 'default'
+		array $languageKeys = []
 	): ResponseInterface {
 		$registry = $this->registryService->getRegistry();
-		$extensionFiles = [];
+		$extensionFiles = array_values(array_filter(array_keys($registry), fn($file) => str_starts_with($file, "EXT:{$extensionKey}/")));
 
-		foreach (array_keys($registry) as $file) {
-			if (str_starts_with($file, "EXT:{$extensionKey}/")) {
-				$extensionFiles[] = $file;
-			}
-		}
+		$sourceFile = $sourceFile ?: ($extensionFiles[0] ?? '');
+		$languageKeys = $languageKeys ?: ['default'];
 
-		if (empty($sourceFile) && !empty($extensionFiles)) {
-			$sourceFile = $extensionFiles[0];
-		}
-
-		$translations = [];
-		$defaultLanguageData = [];
-
-		if ($sourceFile) {
-			$overridePath = $this->registryService->getOverridePath($sourceFile, $languageKey);
-
-			if ($languageKey === 'default') {
-				$translations = $this->xliffService->getTranslations($sourceFile, $overridePath);
-			} else {
-				// For non-default languages, also load default language data
-				$defaultOverridePath = $this->registryService->getOverridePath($sourceFile, 'default');
-				$defaultLanguageData = $this->xliffService->getTranslations($sourceFile, $defaultOverridePath);
-
-				// Load current language translations
-				$translations = $this->xliffService->getLanguageTranslations($sourceFile, $languageKey, $overridePath);
-
-				// Merge default language data into translations array
-				foreach ($translations as $key => $data) {
-					if (isset($defaultLanguageData[$key])) {
-						$translations[$key]['defaultSource'] = $defaultLanguageData[$key]['source'];
-						$translations[$key]['defaultOverride'] = $defaultLanguageData[$key]['override'] ?? '';
-						$translations[$key]['hasDefaultOverride'] = !empty($defaultLanguageData[$key]['override']);
-					}
-				}
-			}
-		}
+		$unifiedTranslations = $this->buildUnifiedTranslations($sourceFile, $languageKeys);
+		$selectedLanguagesMap = array_fill_keys($languageKeys, true);
 
 		$this->moduleTemplate->assignMultiple([
 			'extensionKey' => $extensionKey,
 			'sourceFile' => $sourceFile,
-			'languageKey' => $languageKey,
+			'languageKeys' => $languageKeys,
 			'extensionFiles' => $extensionFiles,
 			'availableLanguages' => $this->xliffService->getAvailableLanguages(),
-			'translations' => $translations,
+			'translations' => $unifiedTranslations,
+			'selectedLanguagesMap' => $selectedLanguagesMap,
 		]);
 
 		$this->addDocHeaderCloseAndSaveButtons();
-
 		return $this->moduleTemplate->renderResponse('LabelEditor/EditExtension');
 	}
 
+	public function saveTranslationAction(): ResponseInterface
+	{
+		$data = $this->request->getParsedBody();
+		$extensionKey = $data['extensionKey'] ?? '';
+		$sourceFile = $data['sourceFile'] ?? '';
+		$languageKeys = $data['languageKeys'] ?? ['default'];
+		$translations = $data['translations'] ?? [];
+
+		foreach ($languageKeys as $languageKey) {
+			if (!isset($translations[$languageKey])) {
+				continue;
+			}
+
+			$overridePath = $this->registryService->getOverridePath($sourceFile, $languageKey);
+			$fullTranslations = $this->loadTranslations($sourceFile, $languageKey, $overridePath);
+
+			foreach ($translations[$languageKey] as $key => $value) {
+				if (isset($fullTranslations[$key])) {
+					$fullTranslations[$key]['override'] = $value;
+				}
+			}
+
+			$this->xliffService->saveTranslations($overridePath, $fullTranslations, $languageKey, $sourceFile);
+		}
+
+		$this->addFlashMessage(
+			"Labels saved for " . count($languageKeys) . " language(s) and caches cleared.",
+			'Labels Updated',
+			ContextualFeedbackSeverity::OK
+		);
+
+		return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
+	}
+
+	public function addLabelAction(
+		string $extensionKey,
+		string $sourceFile,
+		array $languageKeys = [],
+		string $labelKey = ''
+	): ResponseInterface {
+		if (!$labelKey) {
+			return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
+		}
+
+		if (!preg_match('/^[a-zA-Z0-9._-]+$/', $labelKey)) {
+			$this->addFlashMessage(
+				'Label key can only contain letters, numbers, dots, underscores and hyphens.',
+				'Invalid Label Key',
+				ContextualFeedbackSeverity::ERROR
+			);
+			return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
+		}
+
+		$registry = $this->registryService->getRegistry();
+		$allLanguagePaths = $registry[$sourceFile] ?? [];
+
+		if (empty($allLanguagePaths)) {
+			$this->addFlashMessage('Could not find language files for this source file.', 'Error', ContextualFeedbackSeverity::ERROR);
+			return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
+		}
+
+		if ($this->labelKeyExists($sourceFile, $labelKey, $allLanguagePaths)) {
+			$this->addFlashMessage("Label key '{$labelKey}' already exists. Please use a different key.", 'Duplicate Label Key', ContextualFeedbackSeverity::WARNING);
+			return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
+		}
+
+		$this->addLabelToAllLanguages($sourceFile, $labelKey, $allLanguagePaths);
+		$this->addFlashMessage("New label '{$labelKey}' has been added to all languages.", 'Label Added', ContextualFeedbackSeverity::OK);
+
+		return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
+	}
 
 	protected function addDocHeaderCloseAndSaveButtons(): void
 	{
-		$closeUrl = GeneralUtility::sanitizeLocalUrl(
-			(string)($this->request->getQueryParams()['returnUrl'] ?? '')
-		) ?: (string)$this->backendUriBuilder->buildUriFromRoute('site_labeleditor');
+		$closeUrl = GeneralUtility::sanitizeLocalUrl((string)($this->request->getQueryParams()['returnUrl'] ?? ''))
+			?: (string)$this->backendUriBuilder->buildUriFromRoute('site_labeleditor');
+
 		$languageService = $this->getLanguageService();
 		$buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
+
 		$closeButton = $buttonBar->makeLinkButton()
 			->setTitle($languageService->sL('LLL:EXT:core/Resources/Private/Language/locallang_common.xlf:close'))
 			->setIcon($this->iconFactory->getIcon('actions-close', IconSize::SMALL))
 			->setShowLabelText(true)
 			->setHref($closeUrl);
 		$buttonBar->addButton($closeButton, ButtonBar::BUTTON_POSITION_LEFT, 2);
+
 		$saveButton = $buttonBar->makeInputButton()
 			->setName('CMD')
 			->setValue('save')
@@ -204,45 +220,86 @@ class LabelEditorController extends ActionController
 		$buttonBar->addButton($saveButton, ButtonBar::BUTTON_POSITION_LEFT, 4);
 	}
 
-	public function saveTranslationAction(): ResponseInterface
+	private function buildUnifiedTranslations(string $sourceFile, array $languageKeys): array
 	{
-		$data = $this->request->getParsedBody();
-		$extensionKey = $data['extensionKey'] ?? '';
-		$sourceFile = $data['sourceFile'] ?? '';
-		$languageKey = $data['languageKey'] ?? 'default';
-		$translations = $data['translations'] ?? [];
+		$translationsByLanguage = [];
+		$allKeys = [];
 
-		$overridePath = $this->registryService->getOverridePath($sourceFile, $languageKey);
-
-		// Get full translation data including source values
-		if ($languageKey === 'default') {
-			$fullTranslations = $this->xliffService->getTranslations($sourceFile, $overridePath);
-		} else {
-			$fullTranslations = $this->xliffService->getLanguageTranslations($sourceFile, $languageKey, $overridePath);
+		foreach ($languageKeys as $langKey) {
+			$overridePath = $this->registryService->getOverridePath($sourceFile, $langKey);
+			$translations = $this->loadTranslations($sourceFile, $langKey, $overridePath);
+			$translationsByLanguage[$langKey] = $translations;
+			$allKeys = array_merge($allKeys, array_keys($translations));
 		}
 
-		// Merge POST data into full translation structure
-		foreach ($translations as $key => $value) {
-			if (isset($fullTranslations[$key])) {
-				$fullTranslations[$key]['override'] = $value;
+		$allKeys = array_unique($allKeys);
+		$unifiedTranslations = [];
+
+		foreach ($allKeys as $key) {
+			$unifiedTranslations[$key] = ['key' => $key, 'source' => '', 'languages' => []];
+
+			foreach ($languageKeys as $langKey) {
+				if (isset($translationsByLanguage[$langKey][$key])) {
+					$trans = $translationsByLanguage[$langKey][$key];
+					if ($langKey === 'default') {
+						$trans['translation'] = $trans['source'] ?? '';
+					}
+					if (empty($unifiedTranslations[$key]['source'])) {
+						$unifiedTranslations[$key]['source'] = $trans['source'] ?? '';
+					}
+					$unifiedTranslations[$key]['languages'][$langKey] = [
+						'override' => $trans['override'] ?? '',
+						'target' => $trans['translation'] ?? ''
+					];
+				} else {
+					$unifiedTranslations[$key]['languages'][$langKey] = ['override' => '', 'target' => ''];
+				}
 			}
 		}
 
-		$this->xliffService->saveTranslations($overridePath, $fullTranslations, $languageKey, $sourceFile);
+		// sort by key
+		ksort($unifiedTranslations);
+		return $unifiedTranslations;
+	}
 
-		// Clear translation caches (NOT core cache)
-		//$this->clearTranslationCaches();
+	private function loadTranslations(string $sourceFile, string $languageKey, string $overridePath): array
+	{
+		return $languageKey === 'default'
+			? $this->xliffService->getTranslations($sourceFile, $overridePath)
+			: $this->xliffService->getLanguageTranslations($sourceFile, $languageKey, $overridePath);
+	}
 
-		$this->addFlashMessage(
-			'Labels saved and caches cleared.',
-			'Labels Updated',
-			ContextualFeedbackSeverity::OK
-		);
+	private function labelKeyExists(string $sourceFile, string $labelKey, array $allLanguagePaths): bool
+	{
+		foreach ($allLanguagePaths as $langKey => $overridePath) {
+			$existingTranslations = $this->loadTranslations($sourceFile, $langKey, $overridePath);
+			if (isset($existingTranslations[$labelKey])) {
+				return true;
+			}
+		}
+		return false;
+	}
 
+	private function addLabelToAllLanguages(string $sourceFile, string $labelKey, array $allLanguagePaths): void
+	{
+		$value = ' ';
+
+		foreach ($allLanguagePaths as $langKey => $overridePath) {
+			$existingTranslations = $this->loadTranslations($sourceFile, $langKey, $overridePath);
+			$existingTranslations[$labelKey] = ['key' => $labelKey, 'source' => $value, 'override' => $value];
+			if ($langKey !== 'default') {
+				$existingTranslations[$labelKey]['translation'] = '';
+			}
+			$this->xliffService->saveTranslations($overridePath, $existingTranslations, $langKey, $sourceFile);
+		}
+	}
+
+	private function redirectToEditExtension(string $extensionKey, string $sourceFile, array $languageKeys): ResponseInterface
+	{
 		return $this->redirect('editExtension', null, null, [
 			'extensionKey' => $extensionKey,
 			'sourceFile' => $sourceFile,
-			'languageKey' => $languageKey,
+			'languageKeys' => $languageKeys,
 		]);
 	}
 
@@ -253,18 +310,13 @@ class LabelEditorController extends ActionController
 
 	private function clearCoreCache(): void
 	{
-		$cacheManager = GeneralUtility::makeInstance(CacheManager::class);
-		$cacheManager->flushCachesInGroup('system');
+		GeneralUtility::makeInstance(CacheManager::class)->flushCachesInGroup('system');
 	}
 
 	private function clearTranslationCaches(): void
 	{
 		$cacheManager = GeneralUtility::makeInstance(CacheManager::class);
-
-		// Clear parsed translations
 		$cacheManager->getCache('l10n')->flush();
-
-		// Clear frontend page cache
 		$cacheManager->flushCachesInGroup('pages');
 	}
 }

@@ -21,6 +21,7 @@ return [
 				'removeExtension',
 				'editExtension',
 				'saveTranslation',
+				'addLabel'
 			],
 		],
 	],

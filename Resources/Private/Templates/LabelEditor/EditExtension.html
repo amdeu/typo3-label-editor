@@ -14,7 +14,7 @@
     <f:be.pageRenderer includeCssFiles="{0: 'EXT:label_editor/Resources/Public/Css/label-editor.css'}" />
 
     <div class="">
-        <div class="">
+        <div class="d-flex justify-content-between">
             <div class="form-row">
                 <div class="form-group">
                     <label for="sourceFile" class="form-label">Label File</label>
@@ -28,29 +28,67 @@
                         </f:for>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="languageKey" class="form-label">Language</label>
-                    <select id="languageKey" class="form-select">
-                        <f:for each="{availableLanguages}" as="title" key="key">
-                            <option
-                                    data-url="{f:be.uri(route: 'site_labeleditor', parameters: {action: 'editExtension', extensionKey: extensionKey, sourceFile: sourceFile, languageKey: key})}"
-                                    {f:if(condition: '{key} == {languageKey}', then: 'selected')}
-                            >
-                            {title}
-                            </option>
-                        </f:for>
-                    </select>
-                </div>
             </div>
+            <f:if condition="{translations}">
+                <!-- Add Label Form -->
+                <f:form action="addLabel" method="post" class="row g-3">
+                    <f:form.hidden name="extensionKey" value="{extensionKey}" />
+                    <f:form.hidden name="sourceFile" value="{sourceFile}" />
+                    <f:for each="{languageKeys}" as="languageKey">
+                        <f:form.hidden name="languageKeys[]" value="{languageKey}" />
+                    </f:for>
+                    <div class="form-group">
+                        <label for="labelKey" class="form-label">Add label</label>
+                        <div class="d-flex">
+                        <button type="submit" class="btn btn-success me-2">
+                            <core:icon identifier="actions-add" />
+                        </button>
+                        <f:form.textfield
+                                name="labelKey"
+                                id="labelKey"
+                                placeholder="new.label"
+                                class="form-control"
+                                style="width: 20em;"
+                                additionalAttributes="{pattern: '[a-zA-Z0-9._-]+'}"
+                        />
+                        </div>
+                    </div>
+                </f:form>
+            </f:if>
         </div>
     </div>
 
     <f:if condition="{translations}">
-        <form method="post" action="{f:be.uri(route: 'site_labeleditor', parameters: {action: 'saveTranslation'})}"
-              id="labeleditor_form">
-            <input type="hidden" name="extensionKey" value="{extensionKey}" />
-            <input type="hidden" name="sourceFile" value="{sourceFile}" />
-            <input type="hidden" name="languageKey" value="{languageKey}" />
+
+        <f:debug>{translations}</f:debug>
+        <!-- Save Translations Form -->
+        <f:form action="saveTranslation" method="post" id="labeleditor_form">
+            <f:form.hidden name="extensionKey" value="{extensionKey}" />
+            <f:form.hidden name="sourceFile" value="{sourceFile}" />
+
+            <div class="form-group">
+                <label class="form-label">Languages</label>
+                <div id="languageCheckboxes" class="form-row">
+                    <button type="submit" class="btn btn-primary">
+                        <core:icon identifier="actions-refresh" />
+                        Apply
+                    </button>
+                    <f:for each="{availableLanguages}" as="title" key="key">
+                        <div class="form-check">
+                            <f:form.checkbox
+                                    name="languageKeys[]"
+                                    value="{key}"
+                                    id="lang_{key}"
+                                    checked="{selectedLanguagesMap.{key}}"
+                                    class="form-check-input language-checkbox"
+                            />
+                            <label class="form-check-label" for="lang_{key}">
+                                {title}
+                            </label>
+                        </div>
+                    </f:for>
+                </div>
+            </div>
 
             <div class="card">
                 <div class="card-header">
@@ -67,19 +105,20 @@
                         />
                     </div>
                 </div>
+
                 <table class="table table-striped" id="labelsTable">
                     <thead>
                     <tr>
                         <th style="width: 20%">Key</th>
-                        <f:if condition="{languageKey} == 'default'">
+                        <f:if condition="{languageKeys -> f:count()} == 1">
                             <f:then>
                                 <th style="width: 40%">Original</th>
-                                <th style="width: 40%">Custom Label</th>
+                                <th style="width: 40%">Override</th>
                             </f:then>
                             <f:else>
-                                <th style="width: 25%">Default</th>
-                                <th style="width: 25%">Original</th>
-                                <th style="width: 30%">Custom Label</th>
+                                <f:for each="{languageKeys}" as="langKey">
+                                    <th>{availableLanguages.{langKey}}</th>
+                                </f:for>
                             </f:else>
                         </f:if>
                     </tr>
@@ -90,75 +129,43 @@
                             <td>
                                 <code class="text-break">{translation.key}</code>
                             </td>
-                            <f:if condition="{languageKey} == 'default'">
+                            <f:if condition="{languageKeys -> f:count()} == 1">
                                 <f:then>
-                                    <!-- Default language view -->
+                                    <!-- Single language: show original + override -->
                                     <td>
-                                        <small class="text-muted-off">{translation.source}</small>
+                                        <small class="text-muted">{translation.languages.{languageKeys.0}.target}</small>
                                     </td>
-                                    <td class="{f:if(condition:translation.override, then:'custom-label-value')}">
-                                        <textarea
-                                                name="translations[{translation.key}]"
+                                    <td>
+                                        <f:form.textarea
+                                                name="translations[{languageKeys.0}][{translation.key}]"
+                                                value="{translation.languages.{languageKeys.0}.override}"
                                                 class="form-control custom-label-textarea"
                                                 rows="1"
-                                                placeholder="Customize this label"
-                                        >{translation.override}</textarea>
-                                    </td>
+                                                placeholder="{translation.languages.{languageKeys.0}.target}"/>
                                 </f:then>
                                 <f:else>
-                                    <!-- Translation language view -->
-                                        <f:if condition="{translation.hasDefaultOverride}">
-                                            <f:then>
-                                                <td class="custom-label-value">
-                                                <!--                                                <small class="text-danger">{translation.source}</small>-->
-<!--                                                <br />-->
-                                                <small class="">
-                                                    {translation.defaultOverride}
-                                                </small>
-                                                </td>
-                                            </f:then>
-                                            <f:else>
-                                                <td>
-                                                    <small class="">{translation.source}</small>
-                                                </td>
-                                            </f:else>
-                                        </f:if>
-                                    </td>
-                                    <td>
-                                        <f:if condition="{translation.translation}">
-                                            <f:then>
-                                                <small class="text-muted-off">{translation.translation}</small>
-                                            </f:then>
-                                            <f:else>
-                                                <small class="text-muted fst-italic">No translation</small>
-                                            </f:else>
-                                        </f:if>
-                                    </td>
-                                    <td class="{f:if(condition:translation.override, then:'custom-label-value')}">
-                                        <textarea
-                                                name="translations[{translation.key}]"
-                                                class="form-control custom-label-textarea"
-                                                rows="1"
-                                                placeholder="Override translation"
-                                        >{translation.override}</textarea>
-                                    </td>
+                                    <!-- Multiple languages: show override for each -->
+                                    <f:for each="{languageKeys}" as="langKey">
+                                        <td>
+                                            <f:if condition="{translation.languages.{langKey}}">
+                                                <f:form.textarea
+                                                        name="translations[{langKey}][{translation.key}]"
+                                                        value="{translation.languages.{langKey}.override}"
+                                                        class="form-control custom-label-textarea"
+                                                        rows="1"
+                                                        placeholder="{translation.languages.{langKey}.target}"
+                                                />
+                                            </f:if>
+                                        </td>
+                                    </f:for>
                                 </f:else>
                             </f:if>
                         </tr>
                     </f:for>
                     </tbody>
                 </table>
-                <div class="card-footer d-flex justify-content-end">
-                    <f:comment>
-
-                    <button type="submit" class="btn btn-primary">
-                        <core:icon identifier="actions-document-save" />
-                        Save Labels
-                    </button>
-                    </f:comment>
-                </div>
             </div>
-        </form>
+        </f:form>
     </f:if>
 </f:section>
 

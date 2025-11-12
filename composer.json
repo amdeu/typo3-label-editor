@@ -1,5 +1,5 @@
 {
-  "name": "oliveoilexpert/typo3-label-editor",
+  "name": "amdeu/typo3-label-editor",
   "type": "typo3-cms-extension",
   "description": "Translation Label Editor",
   "license": "GPL-2.0-or-later",

@@ -35,7 +35,15 @@ class XliffService
 			$override = $this->xliffParser->getParsedData($overridePath, 'default');
 			foreach ($override['default'] as $key => $data) {
 				if (isset($translations[$key])) {
+					// Existing label - set override
 					$translations[$key]['override'] = $data[0]['target'] ?? $data[0]['source'] ?? '';
+				} else {
+					// New label added via override - add it to the list
+					$translations[$key] = [
+						'key' => $key,
+						'source' => $data[0]['source'] ?? '',
+						'override' => $data[0]['source'] ?? '',
+					];
 				}
 			}
 		}
@@ -78,7 +86,16 @@ class XliffService
 			$override = $this->xliffParser->getParsedData($overridePath, $languageKey);
 			foreach ($override[$languageKey] as $key => $data) {
 				if (isset($translations[$key])) {
+					// Existing label - set override
 					$translations[$key]['override'] = $data[0]['target'] ?? '';
+				} else {
+					// New label added via override - add it to the list
+					$translations[$key] = [
+						'key' => $key,
+						'source' => $data[0]['source'] ?? '',
+						'translation' => '',
+						'override' => $data[0]['target'] ?? '',
+					];
 				}
 			}
 		}
@@ -101,7 +118,6 @@ class XliffService
 
 		file_put_contents($overridePath, $xliff);
 	}
-
 	private function buildXliffContent(array $translations, string $languageKey, string $sourceFile): string
 	{
 		$isDefault = $languageKey === 'default';
@@ -119,7 +135,7 @@ XML;
 		foreach ($translations as $key => $translation) {
 			$overrideValue = $translation['override'] ?? '';
 
-			if (empty($overrideValue)) {
+			if (!$overrideValue) {
 				continue;
 			}
 
