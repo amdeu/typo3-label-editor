@@ -131,6 +131,9 @@ class LabelEditorController extends ActionController
 		$languageKeys = $data['languageKeys'] ?? ['default'];
 		$translations = $data['translations'] ?? [];
 
+		if(!$languageKeys) {
+			$languageKeys = ['default'];
+		}
 		foreach ($languageKeys as $languageKey) {
 			if (!isset($translations[$languageKey])) {
 				continue;
