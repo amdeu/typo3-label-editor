@@ -11,7 +11,8 @@ use TYPO3\CMS\Core\Utility\PathUtility;
 class ExtensionScannerService
 {
 	public function __construct(
-		private readonly PackageManager $packageManager
+		private readonly PackageManager $packageManager,
+		private readonly ConfigurationService $configurationService
 	) {}
 
 	public function getAvailableExtensions(): array
@@ -47,8 +48,13 @@ class ExtensionScannerService
 			new \RecursiveDirectoryIterator($languagePath, \RecursiveDirectoryIterator::SKIP_DOTS)
 		);
 
+		$formatPriority = $this->configurationService->getFormatPriority();
+
 		foreach ($iterator as $file) {
-			if ($file->isFile() && $file->getExtension() === 'xlf') {
+			if (
+				$file->isFile() &&
+				GeneralUtility::inList($formatPriority, $file->getExtension())
+			) {
 				$filename = $file->getFilename();
 
 				// Only base files, not translations (e.g., de.locallang.xlf)

@@ -124,7 +124,7 @@ class RegistryService
 
 		GeneralUtility::mkdir_deep($overrideDir);
 
-		$filename = basename($relativeFilePath);
+		$filename = basename($relativeFilePath) . '.xlf'; // Ensure override files are always XLIFF
 
 		// Create paths for each language
 		$paths = [

@@ -19,7 +19,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use Amdeu\LabelEditor\Backend\Service\ExtensionScannerService;
 use Amdeu\LabelEditor\Backend\Service\RegistryService;
-use Amdeu\LabelEditor\Backend\Service\XliffService;
+use Amdeu\LabelEditor\Backend\Service\TranslationService;
 
 #[AsController]
 class LabelEditorController extends ActionController
@@ -30,7 +30,7 @@ class LabelEditorController extends ActionController
 		protected readonly ModuleTemplateFactory $moduleTemplateFactory,
 		private readonly RegistryService $registryService,
 		private readonly ExtensionScannerService $scannerService,
-		private readonly XliffService $xliffService,
+		private readonly TranslationService $translationService,
 		private readonly BackendUriBuilder $backendUriBuilder,
 		protected IconFactory $iconFactory,
 	) {}
@@ -114,7 +114,7 @@ class LabelEditorController extends ActionController
 			'sourceFile' => $sourceFile,
 			'languageKeys' => $languageKeys,
 			'extensionFiles' => $extensionFiles,
-			'availableLanguages' => $this->xliffService->getAvailableLanguages(),
+			'availableLanguages' => $this->translationService->getAvailableLanguages(),
 			'translations' => $unifiedTranslations,
 			'selectedLanguagesMap' => $selectedLanguagesMap,
 		]);
@@ -148,7 +148,7 @@ class LabelEditorController extends ActionController
 				}
 			}
 
-			$this->xliffService->saveTranslations($overridePath, $fullTranslations, $languageKey, $sourceFile);
+			$this->translationService->saveTranslations($overridePath, $fullTranslations, $languageKey, $sourceFile);
 		}
 
 		$this->addFlashMessage(
@@ -268,8 +268,8 @@ class LabelEditorController extends ActionController
 	private function loadTranslations(string $sourceFile, string $languageKey, string $overridePath): array
 	{
 		return $languageKey === 'default'
-			? $this->xliffService->getTranslations($sourceFile, $overridePath)
-			: $this->xliffService->getLanguageTranslations($sourceFile, $languageKey, $overridePath);
+			? $this->translationService->getTranslations($sourceFile, $overridePath)
+			: $this->translationService->getLanguageTranslations($sourceFile, $languageKey, $overridePath);
 	}
 
 	private function labelKeyExists(string $sourceFile, string $labelKey, array $allLanguagePaths): bool
@@ -293,7 +293,7 @@ class LabelEditorController extends ActionController
 			if ($langKey !== 'default') {
 				$existingTranslations[$labelKey]['translation'] = '';
 			}
-			$this->xliffService->saveTranslations($overridePath, $existingTranslations, $langKey, $sourceFile);
+			$this->translationService->saveTranslations($overridePath, $existingTranslations, $langKey, $sourceFile);
 		}
 	}
 

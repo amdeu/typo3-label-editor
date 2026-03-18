@@ -4,22 +4,24 @@ declare(strict_types=1);
 
 namespace Amdeu\LabelEditor\Backend\Service;
 
-use TYPO3\CMS\Core\Localization\Parser\XliffParser;
+use TYPO3\CMS\Core\Localization\Parser;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class XliffService
+class TranslationService
 {
 	public function __construct(
-		private readonly XliffParser $xliffParser,
-		private readonly SiteFinder $siteFinder
+		private readonly Parser\XliffParser $xliffParser,
+		private readonly SiteFinder $siteFinder,
+		private readonly ConfigurationService $configurationService
 	) {}
 
 	public function getTranslations(string $sourceFile, string $overridePath = ''): array
 	{
 		// Parse original file
 		$originalPath = GeneralUtility::getFileAbsFileName($sourceFile);
-		$original = $this->xliffParser->getParsedData($originalPath, 'default');
+		$loader = $this->configurationService->getLoaderForFile($originalPath);
+		$original = $loader->getParsedData($originalPath, 'default');
 
 		$translations = [];
 		foreach ($original['default'] as $key => $data) {
@@ -58,10 +60,11 @@ class XliffService
 		// Try to find original language file
 		$langFilePath = $this->getLanguageFilePath($originalPath, $languageKey);
 
+		$loader = $this->configurationService->getLoaderForFile($originalPath);
 		$translations = [];
 
 		// Parse original file for keys
-		$original = $this->xliffParser->getParsedData($originalPath, 'default');
+		$original = $loader->getParsedData($originalPath, 'default');
 		foreach ($original['default'] as $key => $data) {
 			$translations[$key] = [
 				'key' => $key,
@@ -73,7 +76,7 @@ class XliffService
 
 		// Parse language file if exists
 		if ($langFilePath && file_exists($langFilePath)) {
-			$langData = $this->xliffParser->getParsedData($langFilePath, $languageKey);
+			$langData = $loader->getParsedData($langFilePath, $languageKey);
 			foreach ($langData[$languageKey] as $key => $data) {
 				if (isset($translations[$key])) {
 					$translations[$key]['translation'] = $data[0]['target'] ?? '';
@@ -118,6 +121,7 @@ class XliffService
 
 		file_put_contents($overridePath, $xliff);
 	}
+
 	private function buildXliffContent(array $translations, string $languageKey, string $sourceFile): string
 	{
 		$isDefault = $languageKey === 'default';
@@ -193,5 +197,4 @@ XML;
 		$filename = basename($originalPath);
 		return $dir . '/' . $languageKey . '.' . $filename;
 	}
-
 }

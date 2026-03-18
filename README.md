@@ -10,6 +10,8 @@ A TYPO3 backend module for editing translation labels (locallang files) without 
 - 🔍 **Search & filter** - Quickly find labels
 - 🎯 **Non-destructive** - Original extension files remain untouched
 
+Works with [locallang_formats](https://github.com/amdeu/typo3-locallang-formats) if you want to use YAML, JSON, or PHP array files instead of XLF.
+
 ## 📋 Requirements
 
 - TYPO3 13.4
@@ -62,7 +64,7 @@ Use the search box above the table to filter labels by key or value in real-time
 
 ## 💡 How It Works
 
-The extension uses TYPO3's `locallangXMLOverride` feature:
+The extension uses TYPO3's `locallangXMLOverride`/`resourceOverrides` feature:
 
 1. When you add an extension, a **registry** is created at `var/label_editor/registry.json`
 2. Custom labels are stored in `var/label_editor/overrides/{extension}/{file}.xlf`
