@@ -1,3 +1,4 @@
+
 # TYPO3 Label Editor
 
 A TYPO3 backend module for editing translation labels (locallang files) without modifying the original extension files.
@@ -12,6 +13,10 @@ This extension's intended goal is to allow editors to independently translate fr
 - 🎯 **Non-destructive** - Original extension files remain untouched
 
 Works with [locallang_formats](https://github.com/amdeu/typo3-locallang-formats) if you want to use YAML, JSON, or PHP array files instead of XLF.
+
+<img height="175" alt="index" src="https://github.com/user-attachments/assets/b8276abc-837f-4097-8678-0a74859d54e8" />
+<img height="175" alt="edit" src="https://github.com/user-attachments/assets/b6ceeb3c-887a-4310-b656-57549a15d2f9" />
+
 
 ## 📋 Requirements
 
