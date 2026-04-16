@@ -1,6 +1,7 @@
 # TYPO3 Label Editor
 
 A TYPO3 backend module for editing translation labels (locallang files) without modifying the original extension files.
+This extension's intended goal is to allow editors to independently translate frontend labels without requiring developer involvement.
 
 ## Features
 

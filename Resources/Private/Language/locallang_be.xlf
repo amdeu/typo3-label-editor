@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.0">
+    <file source-language="en" datatype="plaintext" original="messages" product-name="label_editor">
+        <header/>
+        <body>
+            <!-- Index view -->
+            <trans-unit id="index.title">
+                <source>Label Editor</source>
+            </trans-unit>
+            <trans-unit id="index.managed.headline">
+                <source>Managed Extensions</source>
+            </trans-unit>
+            <trans-unit id="index.managed.extension">
+                <source>Extension</source>
+            </trans-unit>
+            <trans-unit id="index.managed.key">
+                <source>Key</source>
+            </trans-unit>
+            <trans-unit id="index.managed.fileCount">
+                <source>File count</source>
+            </trans-unit>
+            <trans-unit id="index.managed.editLabels">
+                <source>Edit Labels</source>
+            </trans-unit>
+            <trans-unit id="index.managed.removeExtension">
+                <source>Remove Extension</source>
+            </trans-unit>
+            <trans-unit id="index.managed.removeConfirmTitle">
+                <source>Remove Extension</source>
+            </trans-unit>
+            <trans-unit id="index.managed.removeConfirmMessage">
+                <source>Are you sure you want to remove this extension from label management? This will permanently delete all custom label overrides for this extension. You can re-add the extension later, but customizations will need to be recreated.</source>
+            </trans-unit>
+            <trans-unit id="index.managed.removeConfirmCancel">
+                <source>Cancel</source>
+            </trans-unit>
+            <trans-unit id="index.managed.removeConfirmOk">
+                <source>Remove extension &amp; Delete custom labels</source>
+            </trans-unit>
+            <trans-unit id="index.managed.empty">
+                <source>No extensions are currently managed. Add an extension below to start editing labels.</source>
+            </trans-unit>
+            <trans-unit id="index.available.headline">
+                <source>Add Extension</source>
+            </trans-unit>
+            <trans-unit id="index.available.extension">
+                <source>Extension</source>
+            </trans-unit>
+            <trans-unit id="index.available.key">
+                <source>Key</source>
+            </trans-unit>
+            <trans-unit id="index.available.addExtension">
+                <source>Add Extension</source>
+            </trans-unit>
+            <trans-unit id="index.available.empty">
+                <source>All extensions with translation files are already managed.</source>
+            </trans-unit>
+
+            <!-- EditExtension view -->
+            <trans-unit id="edit.title">
+                <source>Edit Labels</source>
+            </trans-unit>
+            <trans-unit id="edit.backendFileWarning.title">
+                <source>Potentially backend language file</source>
+            </trans-unit>
+            <trans-unit id="edit.backendFileWarning.message">
+                <source>The file name suggests it contains backend or TCA labels (e.g. field names, module titles) rather than frontend labels. This extension's intended goal is to allow editors to independently translate website-facing labels without requiring developer involvement.</source>
+            </trans-unit>
+            <trans-unit id="edit.labelFile">
+                <source>Label File</source>
+            </trans-unit>
+            <trans-unit id="edit.addLabel">
+                <source>Add label</source>
+            </trans-unit>
+            <trans-unit id="edit.languages">
+                <source>Languages</source>
+            </trans-unit>
+            <trans-unit id="edit.apply">
+                <source>Apply</source>
+            </trans-unit>
+            <trans-unit id="edit.searchLabels">
+                <source>Search labels</source>
+            </trans-unit>
+            <trans-unit id="edit.table.key">
+                <source>Key</source>
+            </trans-unit>
+            <trans-unit id="edit.table.original">
+                <source>Original</source>
+            </trans-unit>
+            <trans-unit id="edit.table.override">
+                <source>Override</source>
+            </trans-unit>
+            <trans-unit id="edit.removeLabel">
+                <source>Remove added label</source>
+            </trans-unit>
+
+            <!-- JavaScript labels -->
+            <trans-unit id="js.removeLabel.title">
+                <source>Remove Label</source>
+            </trans-unit>
+            <trans-unit id="js.removeLabel.message">
+                <source>Are you sure you want to remove the label "%s" from all languages? This action cannot be undone.</source>
+            </trans-unit>
+            <trans-unit id="js.removeLabel.cancel">
+                <source>Cancel</source>
+            </trans-unit>
+            <trans-unit id="js.removeLabel.confirm">
+                <source>Remove</source>
+            </trans-unit>
+            <trans-unit id="js.search.noResults">
+                <source>No labels match your search</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

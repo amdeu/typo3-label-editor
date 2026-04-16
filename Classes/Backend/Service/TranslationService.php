@@ -45,6 +45,7 @@ class TranslationService
 						'key' => $key,
 						'source' => $data[0]['source'] ?? '',
 						'override' => $data[0]['source'] ?? '',
+						'isAdded' => true,
 					];
 				}
 			}
@@ -98,6 +99,7 @@ class TranslationService
 						'source' => $data[0]['source'] ?? '',
 						'translation' => '',
 						'override' => $data[0]['target'] ?? '',
+						'isAdded' => true,
 					];
 				}
 			}

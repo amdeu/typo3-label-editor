@@ -8,20 +8,41 @@
 <f:layout name="Module" />
 
 <f:section name="Content">
-    <h1>Edit Labels: {extensionKey}</h1>
+    <h1><f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.title" />: {extensionKey}</h1>
 
-    <f:be.pageRenderer includeJavaScriptModules="{0: '@amdeu/label-editor/label-editor.js'}" />
-    <f:be.pageRenderer includeCssFiles="{0: 'EXT:label_editor/Resources/Public/Css/label-editor.css'}" />
+    <f:be.pageRenderer
+            includeJavaScriptModules="{0: '@amdeu/label-editor/label-editor.js'}"
+            includeCssFiles="{0: 'EXT:label_editor/Resources/Public/Css/label-editor.css'}"
+            addJsInlineLabels="{
+                'label_editor.removeLabel.title': 'LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:js.removeLabel.title',
+                'label_editor.removeLabel.message': 'LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:js.removeLabel.message',
+                'label_editor.removeLabel.cancel': 'LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:js.removeLabel.cancel',
+                'label_editor.removeLabel.confirm': 'LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:js.removeLabel.confirm',
+                'label_editor.search.noResults': 'LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:js.search.noResults'
+            }"
+    />
+
+    <f:if condition="{isBackendFile}">
+        <div class="callout callout-warning">
+            <div class="callout-icon">
+                <core:icon identifier="actions-exclamation-triangle" size="small" />
+            </div>
+            <div class="callout-body">
+                <div class="callout-title"><f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.backendFileWarning.title" /></div>
+                <div class="callout-text"><f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.backendFileWarning.message" /></div>
+            </div>
+        </div>
+    </f:if>
 
     <div class="">
         <div class="d-flex justify-content-between">
             <div class="form-row">
                 <div class="form-group">
-                    <label for="sourceFile" class="form-label">Label File</label>
+                    <label for="sourceFile" class="form-label"><f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.labelFile" /></label>
                     <select id="sourceFile" class="form-select">
                         <f:for each="{extensionFiles}" as="file">
                             <option
-                                    data-url="{f:be.uri(route: 'site_labeleditor', parameters: {action: 'editExtension', extensionKey: extensionKey, sourceFile: file, languageKey: languageKey})}"
+                                    data-url="{f:be.uri(route: 'web_labeleditor', parameters: {action: 'editExtension', extensionKey: extensionKey, sourceFile: file, languageKey: languageKey})}"
                                     {f:if(condition: '{file} == {sourceFile}', then: 'selected')} >
                             {file -> f:format.crop(maxCharacters: 60)}
                             </option>
@@ -38,20 +59,20 @@
                         <f:form.hidden name="languageKeys[]" value="{languageKey}" />
                     </f:for>
                     <div class="form-group">
-                        <label for="labelKey" class="form-label">Add label</label>
+                        <label for="labelKey" class="form-label"><f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.addLabel" /></label>
                         <div class="d-flex">
-                        <button type="submit" class="btn btn-success me-2">
-                            <core:icon identifier="actions-add" />
-                        </button>
-                        <f:form.textfield
-                                name="labelKey"
-                                id="labelKey"
-                                placeholder="label.key"
-                                class="form-control"
-                                style="width: 20em;"
-                                required="required"
-                                additionalAttributes="{pattern: '[a-zA-Z0-9._-]+'}"
-                        />
+                            <button type="submit" class="btn btn-success me-2">
+                                <core:icon identifier="actions-add" />
+                            </button>
+                            <f:form.textfield
+                                    name="labelKey"
+                                    id="labelKey"
+                                    placeholder="label.key"
+                                    class="form-control"
+                                    style="width: 20em;"
+                                    required="required"
+                                    additionalAttributes="{pattern: '[a-zA-Z0-9._\\-]+'}"
+                            />
                         </div>
                     </div>
                 </f:form>
@@ -67,11 +88,11 @@
             <f:form.hidden name="sourceFile" value="{sourceFile}" />
 
             <div class="form-group">
-                <label class="form-label">Languages</label>
+                <label class="form-label"><f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.languages" /></label>
                 <div id="languageCheckboxes" class="form-row">
                     <button type="submit" class="btn btn-primary">
                         <core:icon identifier="actions-refresh" />
-                        Apply
+                        <f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.apply" />
                     </button>
                     <f:for each="{availableLanguages}" as="title" key="key">
                         <div class="form-check">
@@ -100,7 +121,7 @@
                                 type="text"
                                 class="form-control"
                                 id="labelSearch"
-                                placeholder="Search labels"
+                                placeholder="{f:translate(key: 'LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.searchLabels')}"
                                 autocomplete="off"
                         />
                     </div>
@@ -109,11 +130,11 @@
                 <table class="table table-striped" id="labelsTable">
                     <thead>
                     <tr>
-                        <th style="width: 20%">Key</th>
+                        <th style="width: 20%"><f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.table.key" /></th>
                         <f:if condition="{languageKeys -> f:count()} == 1">
                             <f:then>
-                                <th style="width: 40%">Original</th>
-                                <th style="width: 40%">Override</th>
+                                <th style="width: 40%"><f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.table.original" /></th>
+                                <th style="width: 40%"><f:translate key="LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.table.override" /></th>
                             </f:then>
                             <f:else>
                                 <f:for each="{languageKeys}" as="langKey">
@@ -127,9 +148,19 @@
                     </thead>
                     <tbody>
                     <f:for each="{translations}" as="translation">
-                        <tr>
+                        <tr id="label-{translation.key}" class="{f:if(condition: '{highlightLabel} == {translation.key}', then: 't3js-label-highlight')}">
                             <td>
-                                <code class="text-break">{translation.key}</code>
+                                <div class="d-flex align-items-center">
+                                    <code class="text-break flex-grow-1">{translation.key}</code>
+                                    <f:if condition="{translation.isAdded}">
+                                        <a href="{f:be.uri(route: 'web_labeleditor', parameters: {action: 'removeLabel', extensionKey: extensionKey, sourceFile: sourceFile, languageKeys: languageKeys, labelKey: translation.key})}"
+                                           class="btn btn-sm btn-default ms-2 t3js-label-remove"
+                                           title="{f:translate(key: 'LLL:EXT:label_editor/Resources/Private/Language/locallang_be.xlf:edit.removeLabel')}"
+                                           data-label-key="{translation.key}">
+                                            <core:icon identifier="actions-delete" size="small" />
+                                        </a>
+                                    </f:if>
+                                </div>
                             </td>
                             <f:if condition="{languageKeys -> f:count()} == 1">
                                 <f:then>

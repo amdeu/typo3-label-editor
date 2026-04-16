@@ -98,7 +98,8 @@ class LabelEditorController extends ActionController
 	public function editExtensionAction(
 		string $extensionKey,
 		string $sourceFile = '',
-		array $languageKeys = []
+		array $languageKeys = [],
+		string $highlightLabel = ''
 	): ResponseInterface {
 		$registry = $this->registryService->getRegistry();
 		$extensionFiles = array_values(array_filter(array_keys($registry), fn($file) => str_starts_with($file, "EXT:{$extensionKey}/")));
@@ -108,6 +109,7 @@ class LabelEditorController extends ActionController
 
 		$unifiedTranslations = $this->buildUnifiedTranslations($sourceFile, $languageKeys);
 		$selectedLanguagesMap = array_fill_keys($languageKeys, true);
+		$isBackendFile = $this->isBackendLanguageFile($sourceFile);
 
 		$this->moduleTemplate->assignMultiple([
 			'extensionKey' => $extensionKey,
@@ -117,6 +119,8 @@ class LabelEditorController extends ActionController
 			'availableLanguages' => $this->translationService->getAvailableLanguages(),
 			'translations' => $unifiedTranslations,
 			'selectedLanguagesMap' => $selectedLanguagesMap,
+			'highlightLabel' => $highlightLabel,
+			'isBackendFile' => $isBackendFile,
 		]);
 
 		$this->addDocHeaderCloseAndSaveButtons();
@@ -195,13 +199,53 @@ class LabelEditorController extends ActionController
 		$this->addLabelToAllLanguages($sourceFile, $labelKey, $allLanguagePaths);
 		$this->addFlashMessage("New label '{$labelKey}' has been added to all languages.", 'Label Added', ContextualFeedbackSeverity::OK);
 
+		return $this->redirect('editExtension', null, null, [
+			'extensionKey' => $extensionKey,
+			'sourceFile' => $sourceFile,
+			'languageKeys' => $languageKeys,
+			'highlightLabel' => $labelKey,
+		]);
+	}
+
+	public function removeLabelAction(
+		string $extensionKey,
+		string $sourceFile,
+		array $languageKeys = [],
+		string $labelKey = ''
+	): ResponseInterface {
+		if (!$labelKey) {
+			return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
+		}
+
+		$registry = $this->registryService->getRegistry();
+		$allLanguagePaths = $registry[$sourceFile] ?? [];
+
+		if (empty($allLanguagePaths)) {
+			$this->addFlashMessage('Could not find language files for this source file.', 'Error', ContextualFeedbackSeverity::ERROR);
+			return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
+		}
+
+		// Safety check: only allow removing labels that were added (not in original source)
+		$defaultTranslations = $this->translationService->getTranslations($sourceFile, '');
+		if (isset($defaultTranslations[$labelKey])) {
+			$this->addFlashMessage(
+				"Label '{$labelKey}' exists in the original source file and cannot be removed.",
+				'Cannot Remove',
+				ContextualFeedbackSeverity::WARNING
+			);
+			return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
+		}
+
+		$this->removeLabelFromAllLanguages($sourceFile, $labelKey, $allLanguagePaths);
+		$this->addFlashMessage("Label '{$labelKey}' has been removed from all languages.", 'Label Removed', ContextualFeedbackSeverity::OK);
+
 		return $this->redirectToEditExtension($extensionKey, $sourceFile, $languageKeys);
 	}
 
 	protected function addDocHeaderCloseAndSaveButtons(): void
 	{
 		$closeUrl = GeneralUtility::sanitizeLocalUrl((string)($this->request->getQueryParams()['returnUrl'] ?? ''))
-			?: (string)$this->backendUriBuilder->buildUriFromRoute('site_labeleditor');
+			?: (string)$this->backendUriBuilder->buildUriFromRoute('web_labeleditor');
 
 		$languageService = $this->getLanguageService();
 		$buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
@@ -239,7 +283,7 @@ class LabelEditorController extends ActionController
 		$unifiedTranslations = [];
 
 		foreach ($allKeys as $key) {
-			$unifiedTranslations[$key] = ['key' => $key, 'source' => '', 'languages' => []];
+			$unifiedTranslations[$key] = ['key' => $key, 'source' => '', 'isAdded' => false, 'languages' => []];
 
 			foreach ($languageKeys as $langKey) {
 				if (isset($translationsByLanguage[$langKey][$key])) {
@@ -249,6 +293,10 @@ class LabelEditorController extends ActionController
 					}
 					if (empty($unifiedTranslations[$key]['source'])) {
 						$unifiedTranslations[$key]['source'] = $trans['source'] ?? '';
+					}
+					// Mark as added if any language has it flagged
+					if (!empty($trans['isAdded'])) {
+						$unifiedTranslations[$key]['isAdded'] = true;
 					}
 					$unifiedTranslations[$key]['languages'][$langKey] = [
 						'override' => $trans['override'] ?? '',
@@ -297,6 +345,18 @@ class LabelEditorController extends ActionController
 		}
 	}
 
+	private function removeLabelFromAllLanguages(string $sourceFile, string $labelKey, array $allLanguagePaths): void
+	{
+		foreach ($allLanguagePaths as $langKey => $overridePath) {
+			if (!$overridePath || !file_exists($overridePath)) {
+				continue;
+			}
+			$existingTranslations = $this->loadTranslations($sourceFile, $langKey, $overridePath);
+			unset($existingTranslations[$labelKey]);
+			$this->translationService->saveTranslations($overridePath, $existingTranslations, $langKey, $sourceFile);
+		}
+	}
+
 	private function redirectToEditExtension(string $extensionKey, string $sourceFile, array $languageKeys): ResponseInterface
 	{
 		return $this->redirect('editExtension', null, null, [
@@ -321,5 +381,36 @@ class LabelEditorController extends ActionController
 		$cacheManager = GeneralUtility::makeInstance(CacheManager::class);
 		$cacheManager->getCache('l10n')->flush();
 		$cacheManager->flushCachesInGroup('pages');
+	}
+
+	private function isBackendLanguageFile(string $sourceFile): bool
+	{
+		$filename = pathinfo($sourceFile, PATHINFO_FILENAME);
+		// Strip language prefix (e.g. "de.locallang_db" -> "locallang_db")
+		$filename = preg_replace('/^[a-z]{2}\./', '', $filename);
+
+		$backendPatterns = [
+			'locallang_be',
+			'locallang_db',
+			'locallang_tca',
+			'locallang_ttc',
+			'locallang_csh',
+			'locallang_backend',
+			'locallang_mod',
+			'Database',
+		];
+
+		foreach ($backendPatterns as $pattern) {
+			if (str_starts_with($filename, $pattern)) {
+				return true;
+			}
+		}
+
+		// Also flag files in typical backend paths
+		if (preg_match('#/Backend/#i', $sourceFile)) {
+			return true;
+		}
+
+		return false;
 	}
 }
